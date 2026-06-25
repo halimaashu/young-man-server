@@ -27,36 +27,51 @@ async function run() {
     const database = client.db("yong-man");
     const userCollection = database.collection("user");
     const classCollection = database.collection("all-class");
+    const paymentCollection = database.collection("payment");
 
-    app.get("/",async (req, res) => {
-     const result =await userCollection.find().toArray();
-     res.send(result)
+    app.get("/", async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
     });
     // class related api
-    app.post("/api/allClass",async(req,res)=>{
-      const data =req.body;
-      const newClass=await classCollection.insertOne(data)
-      res.status(201).send(newClass)
-    })
+    app.post("/api/allClass", async (req, res) => {
+      const data = req.body;
+      const newClass = await classCollection.insertOne(data);
+      res.status(201).send(newClass);
+    });
     // get all class
-      app.get("/api/allClass",async(req,res)=>{
-     
+    app.get("/api/allClass", async (req, res) => {
+      const allClass = await classCollection.find().toArray();
+      res.status(200).send(allClass);
+    });
     
 
-      const allClass=await classCollection.find().toArray()
-      res.status(200).send(allClass)
-    })
+
+
+
+
+
+
     // get bu query
-      app.get("/api/allClass/:id",async(req,res)=>{
-        const id=req.params.id;
-        const query={_id: new ObjectId(id)}
-     
-    
+    app.get("/api/allClass/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
 
-      const allClass=await classCollection.findOne(query)
-      res.status(200).send(allClass)
-    })
+      const allClass = await classCollection.findOne(query);
+      res.status(200).send(allClass);
+    });
 
+    // payment system related api
+    app.post("/api/payment", async (req, res) => {
+      const { sessionId } = req.body;
+      const ifExist = await paymentCollection.findOne({ sessionId });
+      if (ifExist) {
+        return res.json({ massage: "cant exist!" });
+      }
+      const data = req.body;
+      const result = await paymentCollection.insertOne(data);
+      res.status(201).send(result);
+    });
 
     await client.db("admin").command({ ping: 1 });
 
