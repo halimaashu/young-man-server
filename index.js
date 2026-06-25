@@ -1,5 +1,5 @@
 const express = require("express");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const cors = require("cors");
 
 require("dotenv").config();
@@ -24,10 +24,39 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     await client.connect();
+    const database = client.db("yong-man");
+    const userCollection = database.collection("user");
+    const classCollection = database.collection("all-class");
 
-    app.get("/", (req, res) => {
-      res.send("Hello World!");
+    app.get("/",async (req, res) => {
+     const result =await userCollection.find().toArray();
+     res.send(result)
     });
+    // class related api
+    app.post("/api/allClass",async(req,res)=>{
+      const data =req.body;
+      const newClass=await classCollection.insertOne(data)
+      res.status(201).send(newClass)
+    })
+    // get all class
+      app.get("/api/allClass",async(req,res)=>{
+     
+    
+
+      const allClass=await classCollection.find().toArray()
+      res.status(200).send(allClass)
+    })
+    // get bu query
+      app.get("/api/allClass/:id",async(req,res)=>{
+        const id=req.params.id;
+        const query={_id: new ObjectId(id)}
+     
+    
+
+      const allClass=await classCollection.findOne(query)
+      res.status(200).send(allClass)
+    })
+
 
     await client.db("admin").command({ ping: 1 });
 
