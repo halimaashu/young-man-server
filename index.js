@@ -120,15 +120,45 @@ async function run() {
       res.status(201).send(result);
     });
     app.get("/api/applyAsTrainer", async (req, res) => {
-      const result = await trainerFormCollection.find().toArray();
+      const query={};
+      if(req.query.userId){
+        query.userId=req.query.userId
+      }
+      const result = await trainerFormCollection.find(query).toArray();
       res.send(result);
     });
 
     // favorite related api
     app.post("/api/favorite", async (req, res) => {
       const data = req.body;
+      const { postId, userId } = data;
+
+      const isExist = await favoriteClassCollection.findOne({
+        postId,
+        userId,
+      });
+
+      if (isExist) {
+        await favoriteClassCollection.deleteOne({
+          postId,
+          userId,
+        });
+
+        return res.status(200).send({
+          success: true,
+          favorite: false,
+          message: "Removed from favorite",
+        });
+      }
+
       const result = await favoriteClassCollection.insertOne(data);
-      res.status(201).send(result);
+
+      return res.status(201).send({
+        success: true,
+        favorite: true,
+        result,
+        message: "Added to favorite",
+      });
     });
     app.get("/api/favorite", async (req, res) => {
       const query = {};
@@ -138,8 +168,15 @@ async function run() {
       const result = await favoriteClassCollection.find(query).toArray();
       res.send(result);
     });
+
+    app.delete("/api/unfavorite",async(req,res)=>{
+      const id=req.body._id;
+      const query={_id: new ObjectId(id)}
+      const result=await favoriteClassCollection.deleteOne(query)
+     res.send(result)
+    })
     // vote related api
-    // Vote API
+   
     app.post("/api/vote", async (req, res) => {
       try {
         const { userId, postId, type } = req.body;
@@ -201,9 +238,6 @@ async function run() {
           message: "Vote updated",
           result,
         });
-
-       
-        
       } catch (error) {
         console.error(error);
 
@@ -214,12 +248,18 @@ async function run() {
       }
     });
 
-    app.get("/api/vote/:postId",async(req,res)=>{
-      const {postId}=req.params;
-      const like=await voteCollection.countDocuments({postId,type:"like"})
-      const dislike=await voteCollection.countDocuments({postId,type:"dislike"})
-      res.send({like,dislike})
-    })
+    app.get("/api/vote/:postId", async (req, res) => {
+      const { postId } = req.params;
+      const like = await voteCollection.countDocuments({
+        postId,
+        type: "like",
+      });
+      const dislike = await voteCollection.countDocuments({
+        postId,
+        type: "dislike",
+      });
+      res.send({ like, dislike });
+    });
 
     await client.db("admin").command({ ping: 1 });
 
