@@ -55,6 +55,30 @@ async function run() {
       const result =await classCollection.deleteOne(query)
       res.send(result)
     })
+  app.patch("/api/class/edit", async (req, res) => {
+  try {
+    const { _id, ...updateFields } = req.body;
+    
+    if (!_id) {
+      return res.status(400).json({ message: "Class ID is required" });
+    }
+
+    const query = { _id: new ObjectId(_id) };
+    const updateDoc = { $set: updateFields };
+
+    const result = await classCollection.updateOne(query, updateDoc);
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ message: "Class not found" });
+    }
+
+    res.status(200).json({ message: "Class updated successfully", result });
+
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+    
 
     // get user created class by id
 
