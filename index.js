@@ -145,6 +145,13 @@ async function run() {
       const result = await forumCollection.findOne(query);
       res.send(result);
     });
+    app.delete("/api/forum/:id",async(req,res)=>{
+      const {id}=req.params;
+      const query={_id: new ObjectId(id)}
+      const result=await forumCollection.deleteOne(query)
+      res.send(result)
+
+    })
     // apply as trainer related api
     app.post("/api/applyAsTrainer", async (req, res) => {
       const data = req.body;
