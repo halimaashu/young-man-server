@@ -48,6 +48,13 @@ async function run() {
       const allClass = await classCollection.find().toArray();
       res.status(200).send(allClass);
     });
+    app.delete("/api/classDelete",async(req,res)=>{
+      const id=req.body._id
+      // console.log(id,"for delete the components")
+      const query={_id: new ObjectId(id)}
+      const result =await classCollection.deleteOne(query)
+      res.send(result)
+    })
 
     // get user created class by id
 
@@ -85,6 +92,9 @@ async function run() {
       const query = {};
       if (req.query.userId) {
         query.userId = req.query.userId;
+      }
+      if (req.query.authorId) {
+        query.authorId = req.query.authorId;
       }
       const result = await paymentCollection.find(query).toArray();
       res.send(result);
