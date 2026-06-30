@@ -21,9 +21,9 @@ const client = new MongoClient(uri, {
   },
 });
 
-async function run() {
-  try {
-    await client.connect();
+// async function run() {
+//   try {
+//     await client.connect();
     const database = client.db("yong-man");
     const userCollection = database.collection("user");
     const classCollection = database.collection("all-class");
@@ -33,10 +33,23 @@ async function run() {
     const trainerFormCollection = database.collection("trainerForm");
     const voteCollection = database.collection("vote");
 
+    // user related api
+
     app.get("/", async (req, res) => {
       const result = await userCollection.find().toArray();
       res.send(result);
     });
+    app.patch("/api/userRole/:id",async(req,res)=>{
+      const {id}=req.params;
+      const {role}=req.body;
+      console.log(id,role)
+      const query={_id: new ObjectId(id)}
+      const updateDoc={$set:{role:role}}
+      const result=await userCollection.updateOne(query,updateDoc)
+      res.send(result)
+
+    })
+
     // class related api
     app.post("/api/allClass", async (req, res) => {
       const data = req.body;
@@ -302,15 +315,15 @@ async function run() {
       res.send({ like, dislike });
     });
 
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
 
-    console.log("MongoDB Connected Successfully");
-  } catch (error) {
-    console.error(error);
-  }
-}
+//     console.log("MongoDB Connected Successfully");
+//   } catch (error) {
+//     console.error(error);
+//   }
+// }
 
-run();
+// run();
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
