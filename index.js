@@ -24,54 +24,53 @@ const client = new MongoClient(uri, {
 // async function run() {
 //   try {
 //     await client.connect();
-    const database = client.db("yong-man");
-    const userCollection = database.collection("user");
-    const classCollection = database.collection("all-class");
-    const favoriteClassCollection = database.collection("favorite");
-    const paymentCollection = database.collection("payment");
-    const forumCollection = database.collection("forum");
-    const trainerFormCollection = database.collection("trainerForm");
-    const voteCollection = database.collection("vote");
+const database = client.db("yong-man");
+const userCollection = database.collection("user");
+const classCollection = database.collection("all-class");
+const favoriteClassCollection = database.collection("favorite");
+const paymentCollection = database.collection("payment");
+const forumCollection = database.collection("forum");
+const trainerFormCollection = database.collection("trainerForm");
+const voteCollection = database.collection("vote");
 
-    // user related api
+// user related api
 
-    app.get("/", async (req, res) => {
-      const result = await userCollection.find().toArray();
-      res.send(result);
-    });
-    app.patch("/api/userRole/:id",async(req,res)=>{
-      const {id}=req.params;
-      const {role}=req.body;
-      // console.log(id,role)
-      const query={_id: new ObjectId(id)}
-      const updateDoc={$set:{role:role}}
-      const result=await userCollection.updateOne(query,updateDoc)
-      res.send(result)
+app.get("/", async (req, res) => {
+  const result = await userCollection.find().toArray();
+  res.send(result);
+});
+app.patch("/api/userRole/:id", async (req, res) => {
+  const { id } = req.params;
+  const { role } = req.body;
+  // console.log(id,role)
+  const query = { _id: new ObjectId(id) };
+  const updateDoc = { $set: { role: role } };
+  const result = await userCollection.updateOne(query, updateDoc);
+  res.send(result);
+});
 
-    })
-
-    // class related api
-    app.post("/api/allClass", async (req, res) => {
-      const data = req.body;
-      const newClass = await classCollection.insertOne(data);
-      res.status(201).send(newClass);
-    });
-    // get all class
-    app.get("/api/allClass", async (req, res) => {
-      const allClass = await classCollection.find().toArray();
-      res.status(200).send(allClass);
-    });
-    app.delete("/api/classDelete",async(req,res)=>{
-      const id=req.body._id
-      // console.log(id,"for delete the components")
-      const query={_id: new ObjectId(id)}
-      const result =await classCollection.deleteOne(query)
-      res.send(result)
-    })
-  app.patch("/api/class/edit", async (req, res) => {
+// class related api
+app.post("/api/allClass", async (req, res) => {
+  const data = req.body;
+  const newClass = await classCollection.insertOne(data);
+  res.status(201).send(newClass);
+});
+// get all class
+app.get("/api/allClass", async (req, res) => {
+  const allClass = await classCollection.find().toArray();
+  res.status(200).send(allClass);
+});
+app.delete("/api/classDelete", async (req, res) => {
+  const id = req.body._id;
+  // console.log(id,"for delete the components")
+  const query = { _id: new ObjectId(id) };
+  const result = await classCollection.deleteOne(query);
+  res.send(result);
+});
+app.patch("/api/class/edit", async (req, res) => {
   try {
     const { _id, ...updateFields } = req.body;
-    
+
     if (!_id) {
       return res.status(400).json({ message: "Class ID is required" });
     }
@@ -86,251 +85,281 @@ const client = new MongoClient(uri, {
     }
 
     res.status(200).json({ message: "Class updated successfully", result });
-
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
-    
 
-    // get user created class by id
+// get user created class by id
 
-    app.get("/api/myClass", async (req, res) => {
-      const query = {};
-      if (req.query.userId) {
-        query.userId = req.query.userId;
-      }
+app.get("/api/myClass", async (req, res) => {
+  const query = {};
+  if (req.query.userId) {
+    query.userId = req.query.userId;
+  }
 
-      const result = await classCollection.find(query).toArray();
-      res.send(result);
-    });
+  const result = await classCollection.find(query).toArray();
+  res.send(result);
+});
 
-    // get bu query
-    app.get("/api/allClass/:id", async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
+// get bu query
+app.get("/api/allClass/:id", async (req, res) => {
+  const id = req.params.id;
+  const query = { _id: new ObjectId(id) };
 
-      const allClass = await classCollection.findOne(query);
-      res.status(200).send(allClass);
-    });
+  const allClass = await classCollection.findOne(query);
+  res.status(200).send(allClass);
+});
 
-    // payment system related api
-    app.post("/api/payment", async (req, res) => {
-      const { sessionId } = req.body;
-      const ifExist = await paymentCollection.findOne({ sessionId });
-      if (ifExist) {
-        return res.json({ massage: "cant exist!" });
-      }
-      const data = req.body;
-      const result = await paymentCollection.insertOne(data);
-      res.status(201).send(result);
-    });
-    app.get("/api/payment", async (req, res) => {
-      const query = {};
-      if (req.query.userId) {
-        query.userId = req.query.userId;
-      }
-      if (req.query.authorId) {
-        query.authorId = req.query.authorId;
-      }
-      const result = await paymentCollection.find(query).toArray();
-      res.send(result);
-    });
-    // community forum related api
-    app.post("/api/forum", async (req, res) => {
-      const forum = req.body;
-      const createAt = new Date();
-      const postData = { ...forum, createAt };
-      const newForum = await forumCollection.insertOne(postData);
-      res.status(201).send(newForum);
-    });
-    app.get("/api/forum", async (req, res) => {
-      const query = {};
-      if (req.query.userId) {
-        query.userId = req.query.userId;
-      }
-      const result = await forumCollection.find(query).toArray();
-      res.send(result);
-    });
-    app.get("/api/forum/:id", async (req, res) => {
-      const id = req.params;
-      const query = { _id: new ObjectId(id) };
-      const result = await forumCollection.findOne(query);
-      res.send(result);
-    });
-    app.delete("/api/forum/:id",async(req,res)=>{
-      const {id}=req.params;
-      const query={_id: new ObjectId(id)}
-      const result=await forumCollection.deleteOne(query)
-      res.send(result)
+// payment system related api
+app.post("/api/payment", async (req, res) => {
+  const { sessionId } = req.body;
+  const ifExist = await paymentCollection.findOne({ sessionId });
+  if (ifExist) {
+    return res.json({ massage: "cant exist!" });
+  }
+  const data = req.body;
+  const result = await paymentCollection.insertOne(data);
+  res.status(201).send(result);
+});
+app.get("/api/payment", async (req, res) => {
+  const query = {};
+  if (req.query.userId) {
+    query.userId = req.query.userId;
+  }
+  if (req.query.authorId) {
+    query.authorId = req.query.authorId;
+  }
+  const result = await paymentCollection.find(query).toArray();
+  res.send(result);
+});
+// community forum related api
+app.post("/api/forum", async (req, res) => {
+  const forum = req.body;
+  const createAt = new Date();
+  const postData = { ...forum, createAt };
+  const newForum = await forumCollection.insertOne(postData);
+  res.status(201).send(newForum);
+});
+app.get("/api/forum", async (req, res) => {
+  const query = {};
+  if (req.query.userId) {
+    query.userId = req.query.userId;
+  }
+  const result = await forumCollection.find(query).toArray();
+  res.send(result);
+});
+app.get("/api/forum/:id", async (req, res) => {
+  const id = req.params;
+  const query = { _id: new ObjectId(id) };
+  const result = await forumCollection.findOne(query);
+  res.send(result);
+});
+app.delete("/api/forum/:id", async (req, res) => {
+  const { id } = req.params;
+  const query = { _id: new ObjectId(id) };
+  const result = await forumCollection.deleteOne(query);
+  res.send(result);
+});
+// apply as trainer related api
+app.post("/api/applyAsTrainer", async (req, res) => {
+  const data = req.body;
+  const createAt = new Date();
+  const trainerForm = { ...data, createAt };
+  const result = await trainerFormCollection.insertOne(trainerForm);
+  res.status(201).send(result);
+});
+app.get("/api/applyAsTrainer", async (req, res) => {
+  const query = {};
+  if (req.query.userId) {
+    query.userId = req.query.userId;
+  }
+  const result = await trainerFormCollection.find(query).toArray();
+  res.send(result);
+});
+app.patch("/api/makeTrainer/:id", async (req, res) => {
+  try {
+    const userId = req.params.id;
 
-    })
-    // apply as trainer related api
-    app.post("/api/applyAsTrainer", async (req, res) => {
-      const data = req.body;
-      const createAt = new Date();
-      const trainerForm = { ...data, createAt };
-      const result = await trainerFormCollection.insertOne(trainerForm);
-      res.status(201).send(result);
-    });
-    app.get("/api/applyAsTrainer", async (req, res) => {
-      const query={};
-      if(req.query.userId){
-        query.userId=req.query.userId
-      }
-      const result = await trainerFormCollection.find(query).toArray();
-      res.send(result);
-    });
-    app.patch("/api/makeTrainer/:id",async(req,res)=>{
-      const {id}=req.params;
-      const query={_id: new ObjectId(id)}
-     
-    const {role,trainerFormId}=req.body;
-     console.log(id,role)
-    const updateDoc={$set:{role:role}}
-    const result=await userCollection.updateOne(query,updateDoc)
-    if(result){
-      const deleteForm=await trainerFormCollection.deleteOne({trainerFormId})
-      
+    const { id: trainerFormId, status, role, rejectReason } = req.body;
+
+    // Update user collection
+    const userUpdate = {
+      $set: {
+        status,
+      },
+    };
+
+    if (role) {
+      userUpdate.$set.role = role;
     }
-    res.send(result)
 
-    })
+    const userResult = await userCollection.updateOne(
+      { _id: new ObjectId(userId) },
+      userUpdate,
+    );
 
-    // favorite related api
-    app.post("/api/favorite", async (req, res) => {
-      const data = req.body;
-      const { postId, userId } = data;
+    // Update trainer form
+    const trainerUpdate = {
+      $set: {
+        status,
+        rejectReason,
+      },
+    };
 
-      const isExist = await favoriteClassCollection.findOne({
-        postId,
+    const trainerResult = await trainerFormCollection.updateOne(
+      { _id: new ObjectId(trainerFormId) },
+      trainerUpdate,
+    );
+
+    res.send({
+      success: true,
+      userResult,
+      trainerResult,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+// favorite related api
+app.post("/api/favorite", async (req, res) => {
+  const data = req.body;
+  const { postId, userId } = data;
+
+  const isExist = await favoriteClassCollection.findOne({
+    postId,
+    userId,
+  });
+
+  if (isExist) {
+    await favoriteClassCollection.deleteOne({
+      postId,
+      userId,
+    });
+
+    return res.status(200).send({
+      success: true,
+      favorite: false,
+      message: "Removed from favorite",
+    });
+  }
+
+  const result = await favoriteClassCollection.insertOne(data);
+
+  return res.status(201).send({
+    success: true,
+    favorite: true,
+    result,
+    message: "Added to favorite",
+  });
+});
+app.get("/api/favorite", async (req, res) => {
+  const query = {};
+  if (req.query.userId) {
+    query.userId = req.query.userId;
+  }
+  const result = await favoriteClassCollection.find(query).toArray();
+  res.send(result);
+});
+
+app.delete("/api/unfavorite", async (req, res) => {
+  const id = req.body._id;
+  const query = { _id: new ObjectId(id) };
+  const result = await favoriteClassCollection.deleteOne(query);
+  res.send(result);
+});
+// vote related api
+
+app.post("/api/vote", async (req, res) => {
+  try {
+    const { userId, postId, type } = req.body;
+
+    // Validation
+    if (!userId || !postId || !type) {
+      return res.status(400).send({
+        success: false,
+        message: "Missing required fields",
+      });
+    }
+
+    // Check existing vote
+    const existVote = await voteCollection.findOne({
+      userId,
+      postId,
+    });
+
+    // No previous vote -> Insert
+    if (!existVote) {
+      const result = await voteCollection.insertOne({
         userId,
+        postId,
+        type,
       });
 
-      if (isExist) {
-        await favoriteClassCollection.deleteOne({
-          postId,
-          userId,
-        });
-
-        return res.status(200).send({
-          success: true,
-          favorite: false,
-          message: "Removed from favorite",
-        });
-      }
-
-      const result = await favoriteClassCollection.insertOne(data);
-
-      return res.status(201).send({
+      return res.send({
         success: true,
-        favorite: true,
+        message: "Vote added",
         result,
-        message: "Added to favorite",
       });
-    });
-    app.get("/api/favorite", async (req, res) => {
-      const query = {};
-      if (req.query.userId) {
-        query.userId = req.query.userId;
-      }
-      const result = await favoriteClassCollection.find(query).toArray();
-      res.send(result);
-    });
+    }
 
-    app.delete("/api/unfavorite",async(req,res)=>{
-      const id=req.body._id;
-      const query={_id: new ObjectId(id)}
-      const result=await favoriteClassCollection.deleteOne(query)
-     res.send(result)
-    })
-    // vote related api
-   
-    app.post("/api/vote", async (req, res) => {
-      try {
-        const { userId, postId, type } = req.body;
-
-        // Validation
-        if (!userId || !postId || !type) {
-          return res.status(400).send({
-            success: false,
-            message: "Missing required fields",
-          });
-        }
-
-        // Check existing vote
-        const existVote = await voteCollection.findOne({
-          userId,
-          postId,
-        });
-
-        // No previous vote -> Insert
-        if (!existVote) {
-          const result = await voteCollection.insertOne({
-            userId,
-            postId,
-            type,
-          });
-
-          return res.send({
-            success: true,
-            message: "Vote added",
-            result,
-          });
-        }
-
-        // Same vote clicked again -> Remove vote (Toggle)
-        if (existVote.type === type) {
-          const result = await voteCollection.deleteOne({
-            _id: existVote._id,
-          });
-
-          return res.send({
-            success: true,
-            message: "Vote removed",
-            result,
-          });
-        }
-
-        // Different vote -> Update
-        const result = await voteCollection.updateOne(
-          { _id: existVote._id },
-          {
-            $set: {
-              type,
-            },
-          },
-        );
-
-        return res.send({
-          success: true,
-          message: "Vote updated",
-          result,
-        });
-      } catch (error) {
-        console.error(error);
-
-        res.status(500).send({
-          success: false,
-          message: "Internal Server Error",
-        });
-      }
-    });
-
-    app.get("/api/vote/:postId", async (req, res) => {
-      const { postId } = req.params;
-      const like = await voteCollection.countDocuments({
-        postId,
-        type: "like",
+    // Same vote clicked again -> Remove vote (Toggle)
+    if (existVote.type === type) {
+      const result = await voteCollection.deleteOne({
+        _id: existVote._id,
       });
-      const dislike = await voteCollection.countDocuments({
-        postId,
-        type: "dislike",
-      });
-      res.send({ like, dislike });
-    });
 
-    // await client.db("admin").command({ ping: 1 });
+      return res.send({
+        success: true,
+        message: "Vote removed",
+        result,
+      });
+    }
+
+    // Different vote -> Update
+    const result = await voteCollection.updateOne(
+      { _id: existVote._id },
+      {
+        $set: {
+          type,
+        },
+      },
+    );
+
+    return res.send({
+      success: true,
+      message: "Vote updated",
+      result,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).send({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+});
+
+app.get("/api/vote/:postId", async (req, res) => {
+  const { postId } = req.params;
+  const like = await voteCollection.countDocuments({
+    postId,
+    type: "like",
+  });
+  const dislike = await voteCollection.countDocuments({
+    postId,
+    type: "dislike",
+  });
+  res.send({ like, dislike });
+});
+
+// await client.db("admin").command({ ping: 1 });
 
 //     console.log("MongoDB Connected Successfully");
 //   } catch (error) {
