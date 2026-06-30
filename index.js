@@ -60,6 +60,10 @@ app.get("/api/allClass", async (req, res) => {
   const allClass = await classCollection.find().toArray();
   res.status(200).send(allClass);
 });
+app.get("/api/allApprovedClass",async(rq,res)=>{
+  const result =await classCollection.find({status:"approved"}).toArray()
+  res.send(result)
+})
 app.delete("/api/classDelete", async (req, res) => {
   const id = req.body._id;
   // console.log(id,"for delete the components")
