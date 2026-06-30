@@ -1,6 +1,7 @@
 const express = require("express");
 const { MongoClient, ServerApiVersion, ObjectId, ClientSession } = require("mongodb");
 const cors = require("cors");
+const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 
 require("dotenv").config();
 
@@ -21,6 +22,39 @@ const client = new MongoClient(uri, {
   },
 });
 
+const JWKS=createRemoteJWKSet(new URL(`${process.env.CLIENT_URL}/api/auth/jwks`))
+const verifyToken=async(req,res,next)=>{
+  const authHeader=req.headers.authorization;
+  if(!authHeader || !authHeader.startsWith("Bearer")){
+   return res.status(401).json({msg:"Un authorization"})
+  }
+  const token=authHeader.split(" ")[1]
+  if(!token){
+    return res.status(401).json({msg:"Un authorization"})
+  }
+  try{
+    const {payload}= await jwtVerify(token,JWKS)
+    req.user=payload
+    next()
+
+  }catch(error){
+    console.log(error)
+    return res.status(401).json({msg:"Un authorization"})
+
+
+  }
+
+}
+const verifyAdmin=async(req,res,next)=>{
+  const user=req.user;
+  // console.log("user from admin varyfication",user)
+  if(user.role !=="admin"){
+    return res.status(401).json({msg:"Un authorization"})
+
+  }
+  next()
+
+}
 // async function run() {
 //   try {
 //     await client.connect();
@@ -35,11 +69,11 @@ const voteCollection = database.collection("vote");
 
 // user related api
 
-app.get("/", async (req, res) => {
+app.get("/",verifyToken,async (req, res) => {
   const result = await userCollection.find().toArray();
   res.send(result);
 });
-app.patch("/api/userRole/:id", async (req, res) => {
+app.patch("/api/userRole/:id",verifyToken,verifyAdmin, async (req, res) => {
   const { id } = req.params;
   const { role } = req.body;
   // console.log(id,role)
@@ -50,7 +84,7 @@ app.patch("/api/userRole/:id", async (req, res) => {
 });
 
 // class related api
-app.post("/api/allClass", async (req, res) => {
+app.post("/api/allClass",verifyToken, async (req, res) => {
   const data = req.body;
   const newClass = await classCollection.insertOne(data);
   res.status(201).send(newClass);
@@ -82,14 +116,14 @@ app.get("/api/allApprovedClass",async(req,res)=>{
   const result =await classCollection.find(query).skip(skip).limit(Number(limit)).toArray()
   res.send({data:result,page:Number(page),totalPage})
 })
-app.delete("/api/classDelete", async (req, res) => {
+app.delete("/api/classDelete",verifyToken, async (req, res) => {
   const id = req.body._id;
   // console.log(id,"for delete the components")
   const query = { _id: new ObjectId(id) };
   const result = await classCollection.deleteOne(query);
   res.send(result);
 });
-app.patch("/api/class/edit", async (req, res) => {
+app.patch("/api/class/edit",verifyToken, async (req, res) => {
   try {
     const { _id, ...updateFields } = req.body;
 
@@ -112,7 +146,7 @@ app.patch("/api/class/edit", async (req, res) => {
   }
 });
 // class approve
-app.patch("/api/classApproved/:id", async (req, res) => {
+app.patch("/api/classApproved/:id",verifyToken,verifyAdmin, async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
   const query = { _id: new ObjectId(id) };
@@ -138,7 +172,7 @@ app.get("/api/myClass", async (req, res) => {
 });
 
 // get bu query
-app.get("/api/allClass/:id", async (req, res) => {
+app.get("/api/allClass/:id",verifyToken, async (req, res) => {
   const id = req.params.id;
   const query = { _id: new ObjectId(id) };
 
@@ -147,7 +181,7 @@ app.get("/api/allClass/:id", async (req, res) => {
 });
 
 // payment system related api
-app.post("/api/payment", async (req, res) => {
+app.post("/api/payment",verifyToken, async (req, res) => {
   const { sessionId } = req.body;
   const ifExist = await paymentCollection.findOne({ sessionId });
   if (ifExist) {
@@ -157,7 +191,7 @@ app.post("/api/payment", async (req, res) => {
   const result = await paymentCollection.insertOne(data);
   res.status(201).send(result);
 });
-app.get("/api/payment", async (req, res) => {
+app.get("/api/payment",verifyToken, async (req, res) => {
   const query = {};
   if (req.query.userId) {
     query.userId = req.query.userId;
@@ -169,7 +203,7 @@ app.get("/api/payment", async (req, res) => {
   res.send(result);
 });
 // community forum related api
-app.post("/api/forum", async (req, res) => {
+app.post("/api/forum",verifyToken, async (req, res) => {
   const forum = req.body;
   const createAt = new Date();
   const postData = { ...forum, createAt };
@@ -184,20 +218,20 @@ app.get("/api/forum", async (req, res) => {
   const result = await forumCollection.find(query).toArray();
   res.send(result);
 });
-app.get("/api/forum/:id", async (req, res) => {
+app.get("/api/forum/:id",verifyToken, async (req, res) => {
   const id = req.params;
   const query = { _id: new ObjectId(id) };
   const result = await forumCollection.findOne(query);
   res.send(result);
 });
-app.delete("/api/forum/:id", async (req, res) => {
+app.delete("/api/forum/:id",verifyToken, async (req, res) => {
   const { id } = req.params;
   const query = { _id: new ObjectId(id) };
   const result = await forumCollection.deleteOne(query);
   res.send(result);
 });
 // apply as trainer related api
-app.post("/api/applyAsTrainer", async (req, res) => {
+app.post("/api/applyAsTrainer",verifyToken, async (req, res) => {
   const data = req.body;
   const createAt = new Date();
   const trainerForm = { ...data, createAt };
@@ -212,7 +246,7 @@ app.get("/api/applyAsTrainer", async (req, res) => {
   const result = await trainerFormCollection.find(query).toArray();
   res.send(result);
 });
-app.patch("/api/makeTrainer/:id", async (req, res) => {
+app.patch("/api/makeTrainer/:id",verifyToken,verifyAdmin, async (req, res) => {
   try {
     const userId = req.params.id;
 
@@ -293,7 +327,7 @@ app.post("/api/favorite", async (req, res) => {
     message: "Added to favorite",
   });
 });
-app.get("/api/favorite", async (req, res) => {
+app.get("/api/favorite",verifyToken, async (req, res) => {
   const query = {};
   if (req.query.userId) {
     query.userId = req.query.userId;
@@ -302,7 +336,7 @@ app.get("/api/favorite", async (req, res) => {
   res.send(result);
 });
 
-app.delete("/api/unfavorite", async (req, res) => {
+app.delete("/api/unfavorite",verifyToken, async (req, res) => {
   const id = req.body._id;
   const query = { _id: new ObjectId(id) };
   const result = await favoriteClassCollection.deleteOne(query);
@@ -310,7 +344,7 @@ app.delete("/api/unfavorite", async (req, res) => {
 });
 // vote related api
 
-app.post("/api/vote", async (req, res) => {
+app.post("/api/vote",verifyToken, async (req, res) => {
   try {
     const { userId, postId, type } = req.body;
 
