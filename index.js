@@ -42,7 +42,7 @@ const client = new MongoClient(uri, {
     app.patch("/api/userRole/:id",async(req,res)=>{
       const {id}=req.params;
       const {role}=req.body;
-      console.log(id,role)
+      // console.log(id,role)
       const query={_id: new ObjectId(id)}
       const updateDoc={$set:{role:role}}
       const result=await userCollection.updateOne(query,updateDoc)
@@ -181,6 +181,21 @@ const client = new MongoClient(uri, {
       const result = await trainerFormCollection.find(query).toArray();
       res.send(result);
     });
+    app.patch("/api/makeTrainer/:id",async(req,res)=>{
+      const {id}=req.params;
+      const query={_id: new ObjectId(id)}
+     
+    const {role,trainerFormId}=req.body;
+     console.log(id,role)
+    const updateDoc={$set:{role:role}}
+    const result=await userCollection.updateOne(query,updateDoc)
+    if(result){
+      const deleteForm=await trainerFormCollection.deleteOne({trainerFormId})
+      
+    }
+    res.send(result)
+
+    })
 
     // favorite related api
     app.post("/api/favorite", async (req, res) => {
