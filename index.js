@@ -89,6 +89,19 @@ app.patch("/api/class/edit", async (req, res) => {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
+// class approve
+app.patch("/api/classApproved/:id", async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  const query = { _id: new ObjectId(id) };
+  const updateDoc = {
+    $set: {
+      status: status,
+    },
+  };
+  const result = await classCollection.updateOne(query,updateDoc);
+  res.send(result)
+});
 
 // get user created class by id
 
