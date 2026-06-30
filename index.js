@@ -1,5 +1,5 @@
 const express = require("express");
-const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId, ClientSession } = require("mongodb");
 const cors = require("cors");
 
 require("dotenv").config();
@@ -60,9 +60,27 @@ app.get("/api/allClass", async (req, res) => {
   const allClass = await classCollection.find().toArray();
   res.status(200).send(allClass);
 });
-app.get("/api/allApprovedClass",async(rq,res)=>{
-  const result =await classCollection.find({status:"approved"}).toArray()
-  res.send(result)
+app.get("/api/allApprovedClass",async(req,res)=>{
+  const {page=1,limit=10,search}=req.query;
+    const query={
+    status:"approved",
+  }
+   if(search){
+    query.$or=[
+      {className:{$regex: search ,$options:"i"}},
+      {description:{$regex: search ,$options:"i"}}
+    
+
+    ]
+
+  }
+  const skip=(Number(page)-1)*Number(limit)
+  const totalData=await classCollection.countDocuments(query)
+  const totalPage=Math.ceil( Number(totalData)/Number(limit))
+
+ 
+  const result =await classCollection.find(query).skip(skip).limit(Number(limit)).toArray()
+  res.send({data:result,page:Number(page),totalPage})
 })
 app.delete("/api/classDelete", async (req, res) => {
   const id = req.body._id;
